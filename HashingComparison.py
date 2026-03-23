@@ -123,9 +123,18 @@ def compare_snapshots(old, new):
 # Generate Output Filename
 # -----------------------------
 def generate_output_filename(directory):
-    folder_name = os.path.basename(os.path.abspath(directory))
+def generate_output_filename(directory):
+    # Get clean folder name (no trailing slash issues)
+    folder_name = os.path.basename(os.path.normpath(directory))
+
+    # Handle edge case (like "/" root)
+    if folder_name == "":
+        folder_name = "root"
+
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
     return f"{folder_name}_{timestamp}_Snapshot.json"
+
 
 # -----------------------------
 # Print Results
