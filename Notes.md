@@ -20,11 +20,10 @@ Systemd service: /lib/systemd/system/redis-server.service
 
 What to check inside Redis:
 Security settings in redis.conf:
-# DO NOT bind to localhost on a scored service
-# bind 127.0.0.1   (leave commented out)
+
 protected-mode yes
 requirepass <password>
-# Do not rename commands unless you confirm scoring does not use them
+
 
 Persistence settings:
 dir
@@ -126,6 +125,62 @@ Restart Apache or PHP-FPM depending on setup
 ---------------------------------------------------------------------
 
 SECTION 3 — BLUE-UBNT-04 (UBUNTU SERVER)
+
+How to get to redis:
+redis-cli -h 10.10.10.102 -p 6379
+
+# CONNECTING TO LAMP STACK FROM A LINUX BOX
+
+# 1. Connect to the LAMP server itself (SSH)
+ssh <username>@<lamp-server-ip>
+
+# Example:
+ssh blueteam@10.10.10.104
+
+
+# 2. Connect to Apache (HTTP/S)
+# Apache is accessed through a web browser or curl:
+curl http://<lamp-server-ip>
+curl -I http://<lamp-server-ip>
+
+# Example:
+curl http://10.10.10.104
+curl -I http://10.10.10.104
+
+
+# 3. Connect to MySQL remotely
+mysql -h <lamp-server-ip> -u <username> -p
+
+# Example:
+mysql -h 10.10.10.104 -u root -p
+
+
+# 4. Connect to MySQL locally (after SSHing into the box)
+sudo mysql -u root -p
+
+
+# 5. Check Apache status (after SSHing into the box)
+sudo systemctl status apache2
+
+
+# 6. Check MySQL status (after SSHing into the box)
+sudo systemctl status mysql
+
+
+# 7. Check PHP version (after SSHing into the box)
+php -v
+
+
+# 8. Check PHP modules (after SSHing into the box)
+php -m
+
+
+# 9. Check Apache virtual hosts (after SSHing into the box)
+apache2ctl -S
+
+
+# 10. Check Apache enabled modules (after SSHing into the box)
+apache2ctl -M
 
 How to access:
 ssh <user>@blue-ubnt-04
