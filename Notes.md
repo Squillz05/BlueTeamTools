@@ -277,5 +277,7 @@ AmazonRocks! jbezos
 
 redis-cli: HaHaNoRedis0505!
 
+Redis Root db : AmazonRocks!!
+
 
 ---------------------------------------------------------------------
