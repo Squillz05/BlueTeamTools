@@ -268,4 +268,14 @@ sudo passwd -u <username>
 Force password reset on next login:
 sudo chage -d 0 <username>
 
+
+
+
+Passwds:
+
+AmazonRocks! jbezos
+
+redis-cli: HaHaNoRedis0505!
+
+
 ---------------------------------------------------------------------
