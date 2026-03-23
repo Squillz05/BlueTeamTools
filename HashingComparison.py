@@ -123,7 +123,6 @@ def compare_snapshots(old, new):
 # Generate Output Filename
 # -----------------------------
 def generate_output_filename(directory):
-def generate_output_filename(directory):
     # Get clean folder name (no trailing slash issues)
     folder_name = os.path.basename(os.path.normpath(directory))
 
