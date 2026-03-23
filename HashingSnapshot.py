@@ -1,24 +1,23 @@
 #!/usr/bin/env python3
 
 """
-Directory Snapshot Comparison Tool (Blue Team)
+Directory Snapshot Generator (Blue Team Tool)
 
 This script:
-- Loads a previous snapshot (JSON)
-- Detects snapshot format automatically
-- Re-hashes a target directory
-- Compares differences
-- Prints results to console
-- Saves a NEW CLEAN snapshot (no appended report)
+- Recursively walks through a directory
+- Computes SHA-256 hashes for every file
+- Saves results to an automatically named JSON file
 
-Output file format:
+Output format:
 <FolderName>_<YYYYMMDD_HHMMSS>_Snapshot.json
 
 Usage:
-python3 compare.py <old_snapshot.json> <directory>
+"Usage: python3 snapshot.py <directory_path>"
 
 ⚠️ Safety:
 - READ-ONLY: Does NOT modify any files
+
+
 """
 
 import os
@@ -28,10 +27,10 @@ import sys
 from datetime import datetime
 
 
-# -----------------------------
-# Hashing Function
-# -----------------------------
 def compute_sha256(file_path, chunk_size=8192):
+    """
+    Compute SHA-256 hash of a file in chunks.
+    """
     sha256 = hashlib.sha256()
 
     try:
@@ -45,10 +44,10 @@ def compute_sha256(file_path, chunk_size=8192):
         return None
 
 
-# -----------------------------
-# Directory Snapshot
-# -----------------------------
 def snapshot_directory(root_path):
+    """
+    Walk through directory recursively and hash all files.
+    """
     snapshot = {}
 
     for dirpath, dirnames, filenames in os.walk(root_path):
@@ -62,146 +61,46 @@ def snapshot_directory(root_path):
     return snapshot
 
 
-# -----------------------------
-# Load Previous Snapshot
-# -----------------------------
-def load_snapshot(file_path):
-    try:
-        with open(file_path, "r") as f:
-            data = json.load(f)
-
-        # Handle comparison snapshot format
-        if isinstance(data, dict) and "snapshot" in data:
-            print("[*] Detected comparison snapshot format. Extracting snapshot...")
-            snapshot = data["snapshot"]
-        else:
-            snapshot = data
-
-        if not isinstance(snapshot, dict):
-            raise ValueError("Snapshot is not a valid dictionary.")
-
-        cleaned_snapshot = {}
-        for k, v in snapshot.items():
-            if isinstance(k, str) and isinstance(v, str):
-                cleaned_snapshot[k] = v
-            else:
-                print(f"[!] Skipping invalid entry in snapshot: {k}")
-
-        return cleaned_snapshot
-
-    except Exception as e:
-        print(f"[!] Failed to load snapshot: {e}")
-        sys.exit(1)
-
-
-# -----------------------------
-# Compare Snapshots
-# -----------------------------
-def compare_snapshots(old, new):
-    old_files = set(old.keys())
-    new_files = set(new.keys())
-
-    added = sorted(list(new_files - old_files))
-    removed = sorted(list(old_files - new_files))
-
-    changed = []
-    unchanged = []
-
-    for file in old_files & new_files:
-        if old[file] != new[file]:
-            changed.append(file)
-        else:
-            unchanged.append(file)
-
-    return sorted(added), sorted(removed), sorted(changed), sorted(unchanged)
-
-
-# -----------------------------
-# Generate Output Filename (FIXED)
-# -----------------------------
 def generate_output_filename(directory):
-    folder_name = os.path.basename(os.path.normpath(directory))
-
-    if folder_name == "":
-        folder_name = "root"
-
+    """
+    Generate output filename based on folder name and current datetime.
+    """
+    folder_name = os.path.basename(os.path.abspath(directory))
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-
     return f"{folder_name}_{timestamp}_Snapshot.json"
 
 
-# -----------------------------
-# Print Results
-# -----------------------------
-def print_results(added, removed, changed, unchanged):
-    print("\n====== COMPARISON RESULTS ======\n")
-
-    print(f"[+] New Files: {len(added)}")
-    for f in added:
-        print(f"    + {f}")
-
-    print(f"\n[-] Missing Files: {len(removed)}")
-    for f in removed:
-        print(f"    - {f}")
-
-    print(f"\n[*] Changed Files: {len(changed)}")
-    for f in changed:
-        print(f"    * {f}")
-
-    print(f"\n[=] Unchanged Files: {len(unchanged)}")
-    # Comment out below if too verbose
-    for f in unchanged:
-        print(f"    = {f}")
-
-
-# -----------------------------
-# Save CLEAN Snapshot ONLY
-# -----------------------------
-def save_snapshot(output_file, snapshot):
+def save_snapshot(snapshot_data, output_file):
+    """
+    Save snapshot dictionary to a JSON file.
+    """
     try:
         with open(output_file, "w") as f:
-            json.dump(snapshot, f, indent=4)
-
-        print(f"\n[+] New snapshot saved to: {output_file}")
+            json.dump(snapshot_data, f, indent=4)
+        print(f"[+] Snapshot saved to: {output_file}")
 
     except Exception as e:
         print(f"[!] Failed to save snapshot: {e}")
 
 
-# -----------------------------
-# Main
-# -----------------------------
 def main():
-    if len(sys.argv) != 3:
-        print("Usage: python3 compare.py <old_snapshot.json> <directory>")
+    if len(sys.argv) != 2:
+        print("Usage: python3 snapshot.py <directory_path>")
         sys.exit(1)
 
-    old_snapshot_file = sys.argv[1]
-    directory = sys.argv[2]
-
-    if not os.path.isfile(old_snapshot_file):
-        print("[!] Invalid snapshot file.")
-        sys.exit(1)
+    directory = sys.argv[1]
 
     if not os.path.isdir(directory):
-        print("[!] Invalid directory.")
+        print(f"[!] Error: {directory} is not a valid directory.")
         sys.exit(1)
 
-    print(f"[+] Loading snapshot: {old_snapshot_file}")
-    old_snapshot = load_snapshot(old_snapshot_file)
+    print(f"[+] Scanning directory: {directory}")
 
-    print(f"[+] Scanning current directory: {directory}")
-    new_snapshot = snapshot_directory(directory)
+    snapshot = snapshot_directory(directory)
+    print(f"[+] Hashed {len(snapshot)} files.")
 
-    print(f"[+] Comparing snapshots...")
-    added, removed, changed, unchanged = compare_snapshots(old_snapshot, new_snapshot)
-
-    # Print results
-    print_results(added, removed, changed, unchanged)
-
-    # Save clean snapshot (FIXED LINE)
     output_file = generate_output_filename(directory)
-    save_snapshot(output_file, new_snapshot)
+    save_snapshot(snapshot, output_file)
 
 
 if __name__ == "__main__":
