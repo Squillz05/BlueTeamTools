@@ -1,27 +1,27 @@
-5‑MINUTE PLAN — UBUNTU LINUX BOX (BEGINNER‑FRIENDLY, SAFE, DEFENSIVE)
+5‑MINUTE PLAN — UBUNTU LINUX BOX (BEGINNER‑FRIENDLY, SAFE, RULE‑COMPLIANT)
 
 1. Identify system + running services
-   These commands show you what the machine is and what is running:
+   These commands show what the machine is and what is running:
    hostnamectl
    who
    ss -tulpn
    systemctl list-units --type=service
 
-2. Lock down SSH access (defensive only)
-   Open the SSH config file:
+2. Lock down SSH access (defensive only, without breaking scoring)
+   Open SSH config:
    sudo nano /etc/ssh/sshd_config
 
-   Look for these lines and set them:
+   Set:
    PermitRootLogin no
-   PasswordAuthentication yes   (keep this ON if you are a beginner and using passwords)
+   PasswordAuthentication yes   (keep ON so authorized users can still log in)
 
-   SAVE the file:
-   Press CTRL+O, then ENTER, then CTRL+X
+   Save:
+   CTRL+O, ENTER, CTRL+X
 
    Restart SSH safely:
    sudo systemctl restart ssh
 
-   To confirm SSH is still running:
+   Confirm SSH is running:
    sudo systemctl status ssh
 
 3. Review users and sudo access
@@ -32,22 +32,26 @@
    sudo cat /etc/sudoers
    ls -l /etc/sudoers.d/
 
-   If you see a user you don’t recognize, you can lock them:
+   Lock unknown accounts (do NOT lock authorized Amazonians):
    sudo passwd -l <username>
 
-4. Apply basic firewall rules
+4. Apply firewall rules (must allow scoring IPs)
    Enable firewall:
    sudo ufw enable
 
-   Allow only the ports you need:
+   Allow required ports:
    sudo ufw allow 22
    sudo ufw allow 80
    sudo ufw allow 443
 
-   Deny everything else:
+   Whitelist scoring IPs:
+   sudo ufw allow from 10.10.10.10
+   sudo ufw allow from 10.10.10.11
+
+   Default deny:
    sudo ufw default deny incoming
 
-   Check firewall:
+   Check:
    sudo ufw status
 
 5. Check for persistence mechanisms
@@ -58,37 +62,36 @@
    Systemd services:
    sudo ls /etc/systemd/system/
 
-   If you see something suspicious, disable it:
+   Disable suspicious services:
    sudo systemctl disable <service>
 
 ---------------------------------------------------------------------
 
-5‑MINUTE PLAN — REDIS SERVER (BEGINNER‑FRIENDLY)
+5‑MINUTE PLAN — REDIS SERVER (RULE‑COMPLIANT: DO NOT BIND TO LOCALHOST)
 
-1. Confirm Redis is running and local-only
+1. Confirm Redis is running
    sudo systemctl status redis
    ss -tulpn | grep 6379
 
 2. Check Redis configuration
-   Open config:
    sudo nano /etc/redis/redis.conf
 
-   Ensure these lines exist:
-   bind 127.0.0.1
+   DO NOT set bind 127.0.0.1 (scoring engine must reach Redis)
+   Ensure:
    protected-mode yes
 
-3. Set a password (safe, defensive)
-   In redis.conf, find:
+3. Set a password (safe, allowed)
+   Find:
    # requirepass foobared
 
-   Remove the # and change it to:
+   Change to:
    requirepass StrongPasswordHere
 
 4. Check file permissions
    sudo ls -ld /var/lib/redis
    sudo ls -l /etc/redis/redis.conf
 
-   They should be owned by redis:redis
+   Should be owned by redis:redis
 
 5. Restart Redis safely
    sudo systemctl restart redis
@@ -96,7 +99,7 @@
 
 ---------------------------------------------------------------------
 
-5‑MINUTE PLAN — DATABASE SERVER (MYSQL/MARIADB BOX WE OWN)
+5‑MINUTE PLAN — DATABASE SERVER (MYSQL/MARIADB, RULE‑COMPLIANT)
 
 1. Confirm service status
    sudo systemctl status mysql
@@ -105,8 +108,8 @@
 2. Check MySQL configuration
    sudo nano /etc/mysql/mysql.conf.d/mysqld.cnf
 
-   Ensure:
-   bind-address = 127.0.0.1
+   DO NOT set bind-address to 127.0.0.1 (scoring engine must reach DB)
+   Leave default or ensure it listens on the server’s assigned IP.
 
 3. Log into MySQL
    sudo mysql -u root -p
@@ -126,7 +129,7 @@
 
 ---------------------------------------------------------------------
 
-5‑MINUTE PLAN — LAMP STACK ON UBUNTU BOX (APACHE + PHP + MYSQL)
+5‑MINUTE PLAN — LAMP STACK ON UBUNTU BOX (APACHE + PHP + MYSQL, RULE‑COMPLIANT)
 
 1. Check Apache status
    sudo systemctl status apache2
@@ -135,7 +138,7 @@
 2. Review Apache configuration
    sudo nano /etc/apache2/apache2.conf
 
-   Inside any <Directory> blocks, ensure:
+   Ensure:
    Options -Indexes
 
    Check virtual hosts:
@@ -148,10 +151,9 @@
    display_errors = Off
    expose_php = Off
 
-4. Check MySQL local access only
-   sudo nano /etc/mysql/mysql.conf.d/mysqld.cnf
-   Ensure:
-   bind-address = 127.0.0.1
+4. MySQL access (IMPORTANT)
+   DO NOT bind MySQL to localhost on a scored service.
+   Leave bind-address as default or set to server’s IP.
 
 5. Restart services
    sudo systemctl restart apache2
@@ -186,6 +188,8 @@
    sudo ufw allow 22
    sudo ufw allow 80
    sudo ufw allow 443
+   sudo ufw allow from 10.10.10.10
+   sudo ufw allow from 10.10.10.11
    sudo ufw default deny incoming
 
 ---------------------------------------------------------------------
