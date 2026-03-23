@@ -9,13 +9,13 @@ This script:
 - Re-hashes a target directory
 - Compares differences
 - Prints results to console
-- Saves a NEW snapshot file with appended comparison report
+- Saves a NEW CLEAN snapshot (no appended report)
 
 Output file format:
-<OldSnapshotName>_<YYYYMMDD_HHMMSS>_ComparisonSnapshot.json
+<FolderName>_<YYYYMMDD_HHMMSS>_Snapshot.json
 
 Usage:
-("Usage: python3 compare.py <old_snapshot.json> <directory>")
+python3 compare.py <old_snapshot.json> <directory>
 
 ⚠️ Safety:
 - READ-ONLY: Does NOT modify any files
@@ -63,26 +63,23 @@ def snapshot_directory(root_path):
 
 
 # -----------------------------
-# Load Previous Snapshot (FIXED)
+# Load Previous Snapshot
 # -----------------------------
 def load_snapshot(file_path):
     try:
         with open(file_path, "r") as f:
             data = json.load(f)
 
-        # Case 1: Comparison snapshot format
+        # Handle comparison snapshot format
         if isinstance(data, dict) and "snapshot" in data:
             print("[*] Detected comparison snapshot format. Extracting snapshot...")
             snapshot = data["snapshot"]
-
         else:
             snapshot = data
 
-        # Safety check: ensure it's a valid mapping of path -> hash
         if not isinstance(snapshot, dict):
             raise ValueError("Snapshot is not a valid dictionary.")
 
-        # Ensure values look like hashes (strings)
         cleaned_snapshot = {}
         for k, v in snapshot.items():
             if isinstance(k, str) and isinstance(v, str):
@@ -120,13 +117,11 @@ def compare_snapshots(old, new):
 
 
 # -----------------------------
-# Generate Output Filename
+# Generate Output Filename (FIXED)
 # -----------------------------
 def generate_output_filename(directory):
-    # Get clean folder name (no trailing slash issues)
     folder_name = os.path.basename(os.path.normpath(directory))
 
-    # Handle edge case (like "/" root)
     if folder_name == "":
         folder_name = "root"
 
@@ -160,22 +155,17 @@ def print_results(added, removed, changed, unchanged):
 
 
 # -----------------------------
-# Save Combined Output
+# Save CLEAN Snapshot ONLY
 # -----------------------------
-def save_output(output_file, new_snapshot, report):
+def save_snapshot(output_file, snapshot):
     try:
-        combined = {
-            "snapshot": new_snapshot,
-            "comparison_report": report
-        }
-
         with open(output_file, "w") as f:
-            json.dump(combined, f, indent=4)
+            json.dump(snapshot, f, indent=4)
 
-        print(f"\n[+] Comparison snapshot saved to: {output_file}")
+        print(f"\n[+] New snapshot saved to: {output_file}")
 
     except Exception as e:
-        print(f"[!] Failed to save output: {e}")
+        print(f"[!] Failed to save snapshot: {e}")
 
 
 # -----------------------------
@@ -209,23 +199,9 @@ def main():
     # Print results
     print_results(added, removed, changed, unchanged)
 
-    # Build report
-    report = {
-        "new_files": added,
-        "missing_files": removed,
-        "changed_files": changed,
-        "unchanged_files": unchanged,
-        "summary": {
-            "new": len(added),
-            "missing": len(removed),
-            "changed": len(changed),
-            "unchanged": len(unchanged)
-        }
-    }
-
-    # Save output
-    output_file = generate_output_filename(old_snapshot_file)
-    save_output(output_file, new_snapshot, report)
+    # Save clean snapshot (FIXED LINE)
+    output_file = generate_output_filename(directory)
+    save_snapshot(output_file, new_snapshot)
 
 
 if __name__ == "__main__":
