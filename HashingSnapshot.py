@@ -7,17 +7,13 @@ This script:
 - Recursively walks through a directory
 - Computes SHA-256 hashes for every file
 - Saves results to an automatically named JSON file
+- Stores the scanned directory path inside the JSON
 
 Output format:
 <FolderName>_<YYYYMMDD_HHMMSS>_Snapshot.json
 
-Usage:
-"Usage: python3 snapshot.py <directory_path>"
-
 ⚠️ Safety:
 - READ-ONLY: Does NOT modify any files
-
-
 """
 
 import os
@@ -28,9 +24,6 @@ from datetime import datetime
 
 
 def compute_sha256(file_path, chunk_size=8192):
-    """
-    Compute SHA-256 hash of a file in chunks.
-    """
     sha256 = hashlib.sha256()
 
     try:
@@ -45,9 +38,6 @@ def compute_sha256(file_path, chunk_size=8192):
 
 
 def snapshot_directory(root_path):
-    """
-    Walk through directory recursively and hash all files.
-    """
     snapshot = {}
 
     for dirpath, dirnames, filenames in os.walk(root_path):
@@ -62,21 +52,24 @@ def snapshot_directory(root_path):
 
 
 def generate_output_filename(directory):
-    """
-    Generate output filename based on folder name and current datetime.
-    """
-    folder_name = os.path.basename(os.path.abspath(directory))
+    folder_name = os.path.basename(os.path.normpath(directory))
+    if folder_name == "":
+        folder_name = "root"
+
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     return f"{folder_name}_{timestamp}_Snapshot.json"
 
 
-def save_snapshot(snapshot_data, output_file):
-    """
-    Save snapshot dictionary to a JSON file.
-    """
+def save_snapshot(snapshot_data, directory, output_file):
     try:
+        output = {
+            "scanned_directory": os.path.abspath(directory),
+            "snapshot": snapshot_data
+        }
+
         with open(output_file, "w") as f:
-            json.dump(snapshot_data, f, indent=4)
+            json.dump(output, f, indent=4)
+
         print(f"[+] Snapshot saved to: {output_file}")
 
     except Exception as e:
@@ -100,7 +93,7 @@ def main():
     print(f"[+] Hashed {len(snapshot)} files.")
 
     output_file = generate_output_filename(directory)
-    save_snapshot(snapshot, output_file)
+    save_snapshot(snapshot, directory, output_file)
 
 
 if __name__ == "__main__":
