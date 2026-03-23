@@ -122,11 +122,10 @@ def compare_snapshots(old, new):
 # -----------------------------
 # Generate Output Filename
 # -----------------------------
-def generate_output_filename(old_snapshot_path):
-    base_name = os.path.splitext(os.path.basename(old_snapshot_path))[0]
+def generate_output_filename(directory):
+    folder_name = os.path.basename(os.path.abspath(directory))
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    return f"{base_name}_{timestamp}_ComparisonSnapshot.json"
-
+    return f"{folder_name}_{timestamp}_Snapshot.json"
 
 # -----------------------------
 # Print Results
