@@ -1,4 +1,4 @@
-# BlueTeamTools
+# BlueTeamTools (Rule-Compliant Edition)
 
 SECTION 1 — REDIS DATABASE
 Redis is an in-memory key-value store used for caching, sessions, and queues.
@@ -8,7 +8,7 @@ systemctl status redis
 ps aux | grep redis
 ss -tulpn | grep 6379
 redis-cli
-redis-cli -h 127.0.0.1 -p 6379
+redis-cli -h <server-ip> -p 6379
 
 Important Redis file locations:
 Main config: /etc/redis/redis.conf
@@ -20,32 +20,33 @@ Systemd service: /lib/systemd/system/redis-server.service
 
 What to check inside Redis:
 Security settings in redis.conf:
-bind 127.0.0.1
+# DO NOT bind to localhost on a scored service
+# bind 127.0.0.1   (leave commented out)
 protected-mode yes
 requirepass <password>
-rename-command FLUSHALL ""
-rename-command CONFIG ""
-rename-command SHUTDOWN ""
+# Do not rename commands unless you confirm scoring does not use them
+
 Persistence settings:
 dir
 dbfilename
 appendonly
 appendfsync
+
 Modules:
 redis-cli MODULE LIST
+
 Keys and data:
 redis-cli INFO
 redis-cli KEYS '*'
 redis-cli TYPE <key>
 
-Workflow to secure Redis:
+Workflow to secure Redis (Rule-Compliant):
 Edit /etc/redis/redis.conf
-Set bind 127.0.0.1
-Set protected-mode yes
+Ensure protected-mode yes
 Set requirepass to a strong password
-Disable dangerous commands by renaming them to empty strings
-Restart Redis: systemctl restart redis
-Firewall the port: ufw deny 6379
+Do NOT change bind address (scoring engine must reach Redis)
+Restart Redis: sudo systemctl restart redis
+Firewall: block Red Team IPs only, never block 10.10.10.10 or 10.10.10.11
 
 ---------------------------------------------------------------------
 
@@ -90,13 +91,14 @@ Remove dev files: .git, .env, phpinfo.php
 Check virtual hosts: apache2ctl -S
 
 What to check in MySQL:
-Ensure bind-address = 127.0.0.1
+# DO NOT bind to localhost on a scored service
+# bind-address = 127.0.0.1 (leave default)
 Remove anonymous users
 Check user privileges:
 SELECT user, host, authentication_string FROM mysql.user;
 
 What to check in PHP:
-Disable dangerous functions: exec, passthru, shell_exec, system
+Disable dangerous functions: exec, passthru, shell_exec,system
 Turn off display_errors
 Limit upload sizes
 Disable remote file includes
@@ -106,14 +108,14 @@ Edit /etc/apache2/apache2.conf
 Add or ensure: Options -Indexes
 Check /etc/apache2/sites-enabled/ for misconfigurations
 Remove leftover dev files in /var/www
-Restart Apache: systemctl restart apache2
+Restart Apache: sudo systemctl restart apache2
 
 Workflow to secure MySQL:
 mysql -u root -p
 Remove anonymous users
 Set strong passwords
-Ensure bind-address = 127.0.0.1 in mysqld.cnf
-Restart MySQL: systemctl restart mysql
+Do NOT change bind-address on scored services
+Restart MySQL: sudo systemctl restart mysql
 
 Workflow to secure PHP:
 Edit php.ini
@@ -161,23 +163,26 @@ ls /var/log/
 Workflow to secure the host:
 Lock down SSH:
 Edit /etc/ssh/sshd_config
-Set PasswordAuthentication no
 Set PermitRootLogin no
-Restart SSH: systemctl restart ssh
+Set PasswordAuthentication yes (authorized users must still log in)
+Restart SSH: sudo systemctl restart ssh
 
 Firewall:
-ufw enable
-ufw allow 22
-ufw allow 80
-ufw allow 443
-ufw deny 6379
+sudo ufw enable
+sudo ufw allow 22
+sudo ufw allow 80
+sudo ufw allow 443
+sudo ufw allow from 10.10.10.10
+sudo ufw allow from 10.10.10.11
+# Block Red Team IPs individually (allowed)
+sudo ufw deny from <red-team-ip>
 
 File permissions:
 find / -type f -perm -o+w
 find /var/www -type f -perm -o+w
 
 Remove rogue users:
-deluser <name>
+sudo deluser <name>
 
 Check persistence:
 Cron jobs
