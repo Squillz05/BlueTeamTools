@@ -14,6 +14,9 @@ This script:
 Output file format:
 <OldSnapshotName>_<YYYYMMDD_HHMMSS>_ComparisonSnapshot.json
 
+Usage:
+("Usage: python3 compare.py <old_snapshot.json> <directory>")
+
 ⚠️ Safety:
 - READ-ONLY: Does NOT modify any files
 """
