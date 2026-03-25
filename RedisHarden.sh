@@ -15,8 +15,16 @@ if [ ! -f "$REDIS_CONF" ]; then
     exit 1
 fi
 
-# ensure redis only listens locally (safe for COMP)
-sed -i 's/^bind .*/bind 127.0.0.1/' "$REDIS_CONF"
+# ask for redis password
+read -sp "enter redis requirepass: " REDIS_PASS
+echo ""
+
+# set requirepass safely
+if grep -q "^requirepass" "$REDIS_CONF"; then
+    sed -i "s/^requirepass.*/requirepass $REDIS_PASS/" "$REDIS_CONF"
+else
+    echo "requirepass $REDIS_PASS" >> "$REDIS_CONF"
+fi
 
 # ensure protected mode is on
 sed -i 's/^protected-mode .*/protected-mode yes/' "$REDIS_CONF"
@@ -33,7 +41,6 @@ echo "redis config updated."
 # 2. permissions
 echo "fixing redis file permissions..."
 
-# secure redis directories
 if [ -d /var/lib/redis ]; then
     chown -R redis:redis /var/lib/redis
     chmod 700 /var/lib/redis
@@ -44,7 +51,6 @@ if [ -d /var/log/redis ]; then
     chmod 750 /var/log/redis
 fi
 
-# secure redis.conf
 chmod 640 "$REDIS_CONF"
 chown redis:redis "$REDIS_CONF"
 
