@@ -1,5 +1,5 @@
 #!/bin/bash
-# safe general linux hardening script
+# general linux hardening script
 
 set -euo pipefail
 
@@ -23,22 +23,22 @@ if [ ! -f "$SSHD" ]; then
     exit 1
 fi
 
-# disable root login
-sed -i 's/^PermitRootLogin.*/PermitRootLogin no/' "$SSHD"
+# safer edits 
+grep -q "^PermitRootLogin" "$SSHD" && \
+    sed -i 's/^PermitRootLogin.*/PermitRootLogin no/' "$SSHD" || \
+    echo "PermitRootLogin no" >> "$SSHD"
 
-# enforce password authentication
-sed -i 's/^PasswordAuthentication.*/PasswordAuthentication yes/' "$SSHD"
+grep -q "^PasswordAuthentication" "$SSHD" && \
+    sed -i 's/^PasswordAuthentication.*/PasswordAuthentication yes/' "$SSHD" || \
+    echo "PasswordAuthentication yes" >> "$SSHD"
 
-# disable empty passwords
-sed -i 's/^PermitEmptyPasswords.*/PermitEmptyPasswords no/' "$SSHD"
+grep -q "^PermitEmptyPasswords" "$SSHD" && \
+    sed -i 's/^PermitEmptyPasswords.*/PermitEmptyPasswords no/' "$SSHD" || \
+    echo "PermitEmptyPasswords no" >> "$SSHD"
 
-# disable challenge-response
-sed -i 's/^ChallengeResponseAuthentication.*/ChallengeResponseAuthentication no/' "$SSHD"
-
-# ensure protocol 2
-if ! grep -q "^Protocol 2" "$SSHD"; then
-    echo "Protocol 2" >> "$SSHD"
-fi
+grep -q "^ChallengeResponseAuthentication" "$SSHD" && \
+    sed -i 's/^ChallengeResponseAuthentication.*/ChallengeResponseAuthentication no/' "$SSHD" || \
+    echo "ChallengeResponseAuthentication no" >> "$SSHD"
 
 systemctl reload sshd || systemctl reload ssh || true
 echo "ssh hardened."
@@ -46,7 +46,6 @@ echo "ssh hardened."
 # 3. sudo
 echo "checking sudo settings..."
 
-# ensure sudo requires a password
 if [ -f /etc/sudoers ]; then
     sed -i 's/^%sudo ALL=(ALL:ALL) NOPASSWD: ALL/%sudo ALL=(ALL:ALL) ALL/' /etc/sudoers || true
 fi
@@ -63,34 +62,20 @@ chmod 600 /etc/ssh/ssh_host_* || true
 echo "permissions updated."
 
 # 5. sysctl
-echo "applying basic sysctl hardening..."
+echo "applying minimal sysctl hardening..."
 
 SYSCTL="/etc/sysctl.conf"
 
-# disable ip forwarding
-if ! grep -q "^net.ipv4.ip_forward" "$SYSCTL"; then
-    echo "net.ipv4.ip_forward = 0" >> "$SYSCTL"
-fi
-
-# disable source routing
-if ! grep -q "^net.ipv4.conf.all.accept_source_route" "$SYSCTL"; then
-    echo "net.ipv4.conf.all.accept_source_route = 0" >> "$SYSCTL"
-fi
-
-# enable reverse path filtering
-if ! grep -q "^net.ipv4.conf.all.rp_filter" "$SYSCTL"; then
+grep -q "^net.ipv4.conf.all.rp_filter" "$SYSCTL" || \
     echo "net.ipv4.conf.all.rp_filter = 1" >> "$SYSCTL"
-fi
 
 sysctl -p >/dev/null 2>&1 || true
+
 echo "sysctl settings applied."
 
-# 6. updates
-echo "checking for updates..."
+# 6. updates 
+echo "running safe update (no upgrades)..."
 
 apt-get update -y >/dev/null 2>&1 || true
-apt-get upgrade -y >/dev/null 2>&1 || true
-
-echo "updates complete."
 
 echo "general hardening complete."
