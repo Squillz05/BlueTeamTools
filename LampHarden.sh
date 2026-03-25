@@ -55,7 +55,6 @@ if [ -f "$PHPINI" ]; then
     sed -i 's/^expose_php.*/expose_php = Off/' "$PHPINI" || true
     sed -i 's/^display_errors.*/display_errors = Off/' "$PHPINI" || true
 
-    # ❌ removed allow_url_fopen change (can break apps)
     sed -i 's/^allow_url_include.*/allow_url_include = Off/' "$PHPINI" || true
 
     sed -i 's/^session.cookie_httponly.*/session.cookie_httponly = 1/' "$PHPINI" || true
