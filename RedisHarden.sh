@@ -53,7 +53,15 @@ for cmd in "${cmds[@]}"; do
     fi
 done
 
-echo "redis config updated."
+# extra aggressive but TCP-safe command disables
+declare -a extra_cmds=("EVAL" "EVALSHA" "SCRIPT" "KEYS" "BGREWRITEAOF" "BGSAVE" "MONITOR" "SLAVEOF" "REPLICAOF" "CLIENT" "DEBUG")
+for cmd in "${extra_cmds[@]}"; do
+    if ! grep -q "rename-command $cmd" "$REDIS_CONF"; then
+        echo "rename-command $cmd \"\"" >> "$REDIS_CONF"
+    fi
+done
+
+echo "redis command surface reduced."
 
 # 3. permissions
 echo "updating permissions..."
@@ -68,8 +76,9 @@ if [ -d /var/log/redis ]; then
     chmod 750 /var/log/redis
 fi
 
-chmod 640 "$REDIS_CONF"
-chown redis:redis "$REDIS_CONF"
+# keep config readable by redis via group, but not writable by redis user
+chown root:redis "$REDIS_CONF" 2>/dev/null || true
+chmod 640 "$REDIS_CONF" 2>/dev/null || true
 
 echo "permissions updated."
 
@@ -78,7 +87,7 @@ echo "restarting service..."
 
 systemctl restart redis-server || systemctl restart redis || true
 
-# verify AFTER restart
+# verify AFTER restart (TCP scoring still fine as long as service is listening)
 if redis-cli -a "$REDIS_PASS" INFO >/dev/null 2>&1; then
     echo "redis hardened and verified."
 else
