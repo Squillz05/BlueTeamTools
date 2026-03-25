@@ -40,8 +40,11 @@ grep -q "^ChallengeResponseAuthentication" "$SSHD" && \
     sed -i 's/^ChallengeResponseAuthentication.*/ChallengeResponseAuthentication no/' "$SSHD" || \
     echo "ChallengeResponseAuthentication no" >> "$SSHD"
 
-systemctl reload sshd || systemctl reload ssh || true
-echo "ssh hardened."
+if sshd -t 2>/dev/null; then
+    systemctl reload sshd || systemctl reload ssh || true
+else
+    echo "sshd config invalid, skipping reload"
+fi
 
 # 3. sudo
 echo "checking sudo settings..."
