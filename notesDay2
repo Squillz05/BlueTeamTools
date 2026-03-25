@@ -1,0 +1,181 @@
+Here’s a clean, competition‑ready Day 2 workflow plan written as a Markdown checklist you can literally follow step‑by‑step on the box.
+It’s structured, concise, and matches your preferred style: minimal, operational, and command‑driven.
+
+Day 2 Blue Team Workflow (Database Service)
+Operational Checklist + Commands
+
+🟦 1. Verify Redis + LAMP Configs Before Touching Anything
+Purpose: confirm nothing drifted overnight and check for Red Team tampering.
+Commands
+# redis configs
+sudo cat /etc/redis/redis.conf | less
+sudo ls -l /etc/redis
+sudo ls -l /var/lib/redis
+sudo ls -l /var/log/redis
+
+# apache configs
+sudo apache2ctl -S
+sudo cat /etc/apache2/apache2.conf | less
+sudo cat /etc/apache2/conf-available/security.conf | less
+
+# php configs
+sudo find /etc/php -name php.ini -exec grep -H "expose_php" {} \;
+
+# mysql configs
+sudo cat /etc/mysql/mysql.conf.d/mysqld.cnf | less
+sudo mysql -e "SELECT User,Host FROM mysql.user;"
+
+
+
+🟦 2. Run Your Hardening Scripts (LAMP, Redis, Box Hardening)
+Purpose: re‑assert your baseline and undo any overnight changes.
+Commands
+sudo bash lamp_hardening.sh
+sudo bash redis_hardening.sh
+sudo bash box_hardening.sh
+
+
+Notes
+- Run Redis script first if you suspect tampering.
+- LAMP script second (since Day 2 added a LAMP vuln).
+- Box hardening last (firewall, users, perms).
+
+🟦 3. Re‑Check Firewall Rules
+Purpose: ensure Red Team didn’t open ports or add IPs.
+Commands
+sudo ufw status verbose
+sudo iptables -L -n -v
+sudo ss -tulpn
+
+
+Expected
+- Only ports: 22, 80, 443
+- Only allowed IPs: 10.10.10.10, 10.10.10.11
+
+🟦 4. Enumerate Users, Processes, and Services
+Purpose: catch persistence, rogue accounts, or malicious processes.
+Commands
+# users
+cat /etc/passwd
+sudo awk -F: '($3 == 0) {print}' /etc/passwd   # check for extra root users
+
+# groups
+cat /etc/group
+
+# processes
+ps aux --sort=-%cpu | head
+ps aux | grep -vE "root|redis|mysql|apache" | grep -iE "nc|python|perl|php|bash"
+
+# services
+systemctl --type=service --state=running
+
+
+Look for
+- Suspicious usernames
+- Python reverse shells
+- Netcat listeners
+- Cron jobs you didn’t create
+
+🟦 5. Re‑Baseline File Integrity (Directory Hashing Script)
+Purpose: create a fresh Day 2 baseline after hardening.
+Commands
+sudo bash directory_hashing.sh
+
+
+Typical directories to hash
+/etc
+/var/www
+/redis
+/var/lib/redis
+/home
+
+
+
+🟦 6. Document Everything (Your Notes)
+Purpose: track changes for scoring, rollback, and incident response.
+Record
+- Redis config state
+- Apache + PHP config state
+- MySQL users + DB list
+- Firewall rules
+- Suspicious processes killed
+- New hashes generated
+
+Full Markdown Version (Copy/Paste Ready)
+# Day 2 Blue Team Workflow – Database Service
+
+## 1. Verify Configs
+### Redis
+- `sudo cat /etc/redis/redis.conf | less`
+- `sudo ls -l /etc/redis`
+- `sudo ls -l /var/lib/redis`
+- `sudo ls -l /var/log/redis`
+
+### Apache
+- `sudo apache2ctl -S`
+- `sudo cat /etc/apache2/apache2.conf | less`
+- `sudo cat /etc/apache2/conf-available/security.conf | less`
+
+### PHP
+- `sudo find /etc/php -name php.ini -exec grep -H "expose_php" {} \;`
+
+### MySQL
+- `sudo cat /etc/mysql/mysql.conf.d/mysqld.cnf | less`
+- `sudo mysql -e "SELECT User,Host FROM mysql.user;"`
+
+---
+
+## 2. Run Hardening Scripts
+- `sudo bash lamp_hardening.sh`
+- `sudo bash redis_hardening.sh`
+- `sudo bash box_hardening.sh`
+
+---
+
+## 3. Check Firewall
+- `sudo ufw status verbose`
+- `sudo iptables -L -n -v`
+- `sudo ss -tulpn`
+
+Expected:
+- Ports: 22, 80, 443  
+- Allowed IPs: 10.10.10.10, 10.10.10.11
+
+---
+
+## 4. Check Users, Processes, Services
+### Users
+- `cat /etc/passwd`
+- `sudo awk -F: '($3 == 0) {print}' /etc/passwd`
+
+### Processes
+- `ps aux --sort=-%cpu | head`
+- `ps aux | grep -vE "root|redis|mysql|apache" | grep -iE "nc|python|perl|php|bash"`
+
+### Services
+- `systemctl --type=service --state=running`
+
+---
+
+## 5. Re-Baseline Hashes
+- `sudo bash directory_hashing.sh`
+
+Suggested dirs:
+- `/etc`
+- `/var/www`
+- `/redis`
+- `/var/lib/redis`
+- `/home`
+
+---
+
+## 6. Document Everything
+Record:
+- Redis config state  
+- Apache/PHP config state  
+- MySQL users  
+- Firewall rules  
+- Suspicious processes  
+- New hashes  
+
+
