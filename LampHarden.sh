@@ -11,14 +11,14 @@ echo "hardening apache..."
 APACHE_CONF="/etc/apache2/apache2.conf"
 SEC_CONF="/etc/apache2/conf-available/security.conf"
 
-# disable directory listing SAFELY (no duplicates)
+# disable directory listing SAFELY 
 if ! grep -q "Options -Indexes" "$APACHE_CONF"; then
     echo "<Directory /var/www/>" >> "$APACHE_CONF"
     echo "    Options -Indexes" >> "$APACHE_CONF"
     echo "</Directory>" >> "$APACHE_CONF"
 fi
 
-# hide version info (safe replace or append)
+# hide version info 
 grep -q "^ServerTokens" "$SEC_CONF" && \
     sed -i 's/^ServerTokens.*/ServerTokens Prod/' "$SEC_CONF" || \
     echo "ServerTokens Prod" >> "$SEC_CONF"
@@ -27,11 +27,11 @@ grep -q "^ServerSignature" "$SEC_CONF" && \
     sed -i 's/^ServerSignature.*/ServerSignature Off/' "$SEC_CONF" || \
     echo "ServerSignature Off" >> "$SEC_CONF"
 
-# enable useful modules (safe)
+# enable useful modules 
 a2enmod headers >/dev/null 2>&1 || true
 a2enmod rewrite >/dev/null 2>&1 || true
 
-# add basic security headers (only if not exists)
+# add basic security headers 
 SEC_FILE="/etc/apache2/conf-available/security-headers.conf"
 if [ ! -f "$SEC_FILE" ]; then
 cat <<EOF > "$SEC_FILE"
@@ -68,7 +68,7 @@ echo "php hardened."
 # 3. mysql
 echo "hardening mysql..."
 
-# keep anonymous users (per your requirement)
+# keep anonymous users 
 mysql -e "UPDATE mysql.user SET Host='localhost' WHERE User='root' AND Host!='localhost';" 2>/dev/null || true
 mysql -e "DROP DATABASE IF EXISTS test;" 2>/dev/null || true
 mysql -e "FLUSH PRIVILEGES;" 2>/dev/null || true
