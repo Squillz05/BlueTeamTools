@@ -65,12 +65,14 @@ fi
 systemctl reload apache2
 echo "php hardened."
 
-# 3. mysql
 echo "hardening mysql..."
 
-# keep anonymous users 
-mysql -e "UPDATE mysql.user SET Host='localhost' WHERE User='root' AND Host!='localhost';" 2>/dev/null || true
+# remove anonymous users
+mysql -e "DELETE FROM mysql.user WHERE User='';" 2>/dev/null || true
+
+# remove test database
 mysql -e "DROP DATABASE IF EXISTS test;" 2>/dev/null || true
+
 mysql -e "FLUSH PRIVILEGES;" 2>/dev/null || true
 
 echo "mysql hardened."
