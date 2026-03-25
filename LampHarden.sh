@@ -11,7 +11,7 @@ echo "hardening apache..."
 APACHE_CONF="/etc/apache2/apache2.conf"
 SEC_CONF="/etc/apache2/conf-available/security.conf"
 
-# disable directory listing SAFELY 
+# disable directory listing
 if ! grep -q "Options -Indexes" "$APACHE_CONF"; then
     echo "<Directory /var/www/>" >> "$APACHE_CONF"
     echo "    Options -Indexes" >> "$APACHE_CONF"
