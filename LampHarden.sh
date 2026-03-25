@@ -1,5 +1,5 @@
 #!/bin/bash
-# competition-safe LAMP hardening script
+#  LAMP hardening script
 
 set -euo pipefail
 
