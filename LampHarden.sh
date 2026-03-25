@@ -1,5 +1,5 @@
 #!/bin/bash
-#  LAMP hardening script
+# competition-safe polished LAMP hardening script
 
 set -euo pipefail
 
@@ -11,14 +11,16 @@ echo "hardening apache..."
 APACHE_CONF="/etc/apache2/apache2.conf"
 SEC_CONF="/etc/apache2/conf-available/security.conf"
 
-# disable directory listing
-if ! grep -q "Options -Indexes" "$APACHE_CONF"; then
-    echo "<Directory /var/www/>" >> "$APACHE_CONF"
-    echo "    Options -Indexes" >> "$APACHE_CONF"
-    echo "</Directory>" >> "$APACHE_CONF"
+# disable directory listing 
+if ! grep -q "<Directory /var/www/>" "$APACHE_CONF"; then
+cat <<EOF >> "$APACHE_CONF"
+<Directory /var/www/>
+    Options -Indexes
+</Directory>
+EOF
 fi
 
-# hide version info 
+# hide version info
 grep -q "^ServerTokens" "$SEC_CONF" && \
     sed -i 's/^ServerTokens.*/ServerTokens Prod/' "$SEC_CONF" || \
     echo "ServerTokens Prod" >> "$SEC_CONF"
@@ -27,11 +29,11 @@ grep -q "^ServerSignature" "$SEC_CONF" && \
     sed -i 's/^ServerSignature.*/ServerSignature Off/' "$SEC_CONF" || \
     echo "ServerSignature Off" >> "$SEC_CONF"
 
-# enable useful modules 
+# enable useful modules
 a2enmod headers >/dev/null 2>&1 || true
 a2enmod rewrite >/dev/null 2>&1 || true
 
-# add basic security headers 
+# add basic security headers
 SEC_FILE="/etc/apache2/conf-available/security-headers.conf"
 if [ ! -f "$SEC_FILE" ]; then
 cat <<EOF > "$SEC_FILE"
@@ -43,7 +45,13 @@ EOF
     a2enconf security-headers >/dev/null 2>&1 || true
 fi
 
-apache2ctl configtest && systemctl reload apache2
+# safe apache reload
+if apache2ctl configtest >/dev/null 2>&1; then
+    systemctl reload apache2
+else
+    echo "apache config invalid, skipping reload"
+fi
+
 echo "apache hardened."
 
 # 2. php
@@ -61,9 +69,16 @@ if [ -f "$PHPINI" ]; then
     sed -i 's/^session.use_strict_mode.*/session.use_strict_mode = 1/' "$PHPINI" || true
 fi
 
-systemctl reload apache2
+# reload apache for php changes
+if apache2ctl configtest >/dev/null 2>&1; then
+    systemctl reload apache2
+else
+    echo "apache config invalid after php changes, skipping reload"
+fi
+
 echo "php hardened."
 
+# 3. mysql
 echo "hardening mysql..."
 
 # remove anonymous users
